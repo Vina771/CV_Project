@@ -4,4 +4,5 @@ opencv-python-headless>=4.9
 Pillow>=10.3
 numpy>=1.26
 requests>=2.32
+gdown>=5.2
 pytest>=8.2
