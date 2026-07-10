@@ -1,0 +1,31 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Models and generated media
+models/*.pt
+models/*.onnx
+models/*.engine
+outputs/
+runs/
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.webm
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
