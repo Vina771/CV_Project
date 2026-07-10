@@ -1,12 +1,38 @@
-﻿# CV Project - Motorcycle Detection & Tracking
+# Motorcycle Helmet & Plate Tracking
 
-Application Streamlit pour detecter des motos sur images et suivre les objets dans une video avec Ultralytics YOLO.
+Application Streamlit de détection et suivi (tracking) de motards à partir d'images ou de vidéos, avec YOLOv8 et ByteTrack. Détecte le port du casque, la présence de plaque d'immatriculation et suit chaque motard sur la durée d'une vidéo.
 
-Auteur: Vina Raharitsifa - M1 I2AD, INSI
+## Classes détectées
+- `NoHelmet`
+- `PlateNumber`
+- `Rider`
+- `WithHelmet`
 
-## Structure
+## Fonctionnalités
+- Upload d'une ou plusieurs images → détection YOLOv8
+- Upload d'une vidéo → détection + tracking ByteTrack (IDs persistants)
+- Téléchargement automatique des poids (`best.pt` / `last.pt`) depuis Google Drive au premier lancement
+- Résultats annotés affichables et téléchargeables
 
-```text
+## Installation
+
+```bash
+python -m venv venv
+venv\Scripts\activate      # Windows
+pip install -r requirements.txt
+```
+
+## Lancement
+
+```bash
+streamlit run app/Home.py
+```
+
+Au premier lancement, les poids du modèle seront téléchargés automatiquement dans `models/`.
+
+## Structure du projet
+
+```
 CV_Project/
 ├── app/
 │   ├── Home.py
@@ -14,61 +40,17 @@ CV_Project/
 │   │   ├── 1_Image_Detection.py
 │   │   └── 2_Video_Tracking.py
 │   └── utils/
+│       ├── model_loader.py
 │       ├── inference.py
 │       ├── tracker.py
 │       ├── visualization.py
-│       ├── io_utils.py
-│       └── model_loader.py
-├── models/
-├── data/samples/
-├── notebooks/
+│       └── io_utils.py
+├── models/            # poids téléchargés au runtime (non versionnés)
+├── data/samples/       # exemples pour tester
+├── notebooks/          # expés Colab
 └── tests/
 ```
 
-## Installation
-
-```bash
-python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
-```
-
-## Modele
-
-Place ton modele YOLO dans `models/best.pt` ou `models/last.pt`.
-
-Si le modele n'est pas present localement, l'application telecharge automatiquement les poids depuis Google Drive:
-
-- `best.pt`: https://drive.google.com/file/d/1zOpySTI7k6Rcwc13aUw271D1V22-sEe6/view?usp=sharing
-- `last.pt`: https://drive.google.com/file/d/1DWn9li9PkObgXZzO1vWIVsLzAQ2XP6IN/view?usp=sharing
-
-Option runtime: definir une URL avant de lancer Streamlit pour telecharger le modele automatiquement si le fichier n'existe pas:
-
-```powershell
-$env:CV_BEST_MODEL_URL="https://.../best.pt"
-```
-
-Variables supportees: `CV_BEST_MODEL_URL`, `CV_LAST_MODEL_URL`, `CV_MODEL_URL`.
-
-## Lancer l'application
-
-```bash
-streamlit run app/Home.py
-```
-
-## Tests
-
-```bash
-pytest
-```
-
-## GitHub
-
-```bash
-git init
-git add .
-git commit -m "first commit"
-git branch -M main
-git remote add origin https://github.com/Vina771/CV_Project.git
-git push -u origin main
-```
+## Notes
+- Les fichiers `.pt` ne sont pas commités dans le repo (voir `.gitignore`). Ils sont téléchargés automatiquement depuis Google Drive via `gdown`.
+- Si Google Drive limite le téléchargement (fichiers volumineux), basculer vers une GitHub Release avec les poids attachés.

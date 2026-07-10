@@ -1,31 +1,30 @@
-﻿from app.utils.inference import count_detections, run_image_detection
+"""
+Tests basiques pour vérifier le chargement du modèle et l'inférence.
+Nécessite une connexion internet (téléchargement des poids depuis Google Drive).
+"""
+import sys
+from pathlib import Path
+
+import numpy as np
+
+sys.path.append(str(Path(__file__).resolve().parents[1] / "app"))
+
+from utils.inference import load_model, run_inference  # noqa: E402
 
 
-class FakeModel:
-    def predict(self, **kwargs):
-        self.kwargs = kwargs
-        return [FakeResult()]
+def test_load_model():
+    model = load_model("best.pt")
+    assert model is not None
 
 
-class FakeBoxes:
-    def __len__(self):
-        return 2
+def test_run_inference_on_blank_image():
+    model = load_model("best.pt")
+    blank_image = np.zeros((640, 640, 3), dtype=np.uint8)
+    result = run_inference(model, blank_image, conf=0.25)
+    assert result is not None
 
 
-class FakeResult:
-    boxes = FakeBoxes()
-
-
-def test_run_image_detection_returns_first_result():
-    model = FakeModel()
-
-    result = run_image_detection(model, "image.jpg", confidence=0.4, image_size=640)
-
-    assert isinstance(result, FakeResult)
-    assert model.kwargs["source"] == "image.jpg"
-    assert model.kwargs["conf"] == 0.4
-    assert model.kwargs["imgsz"] == 640
-
-
-def test_count_detections_uses_boxes_length():
-    assert count_detections(FakeResult()) == 2
+if __name__ == "__main__":
+    test_load_model()
+    test_run_inference_on_blank_image()
+    print("Tous les tests sont passés.")

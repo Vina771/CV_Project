@@ -1,67 +1,68 @@
-﻿from __future__ import annotations
-
+"""
+Page Streamlit : détection + tracking ByteTrack sur vidéo.
+"""
+import sys
 from pathlib import Path
 
 import streamlit as st
 
-from app.utils.io_utils import ALLOWED_VIDEO_EXTENSIONS, is_allowed_file, readable_size, save_uploaded_file
-from app.utils.model_loader import ModelNotFoundError, load_yolo_model
-from app.utils.tracker import probe_video, run_video_tracking
+sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-WORK_DIR = PROJECT_ROOT / "outputs" / "streamlit"
-UPLOAD_DIR = WORK_DIR / "uploads"
-TRACKING_DIR = WORK_DIR / "tracking"
+from utils.inference import load_model
+from utils.io_utils import make_temp_output_path, save_uploaded_file_to_temp
+from utils.tracker import track_video
 
-st.set_page_config(page_title="Video Tracking", page_icon=":film_frames:", layout="wide")
-st.title("Video Tracking")
+st.set_page_config(page_title="Video Tracking", page_icon="🎥", layout="wide")
+st.title("🎥 Tracking sur vidéo (ByteTrack)")
 
-confidence = st.sidebar.slider("Confidence", min_value=0.05, max_value=0.95, value=0.25, step=0.05)
-image_size = st.sidebar.select_slider("Image size", options=[320, 480, 640, 800, 960, 1280], value=960)
-weight_name = st.sidebar.selectbox("Poids", options=["best.pt", "last.pt"], index=0)
-tracker_name = st.sidebar.selectbox("Tracker", options=["bytetrack.yaml", "botsort.yaml"], index=0)
+with st.sidebar:
+    st.header("Paramètres")
+    weight_choice = st.selectbox("Poids du modèle", ["best.pt", "last.pt"], index=0)
+    conf_threshold = st.slider("Seuil de confiance", 0.05, 0.95, 0.25, 0.05)
 
-upload = st.file_uploader(
-    "Glisse une video",
-    type=[ext.replace(".", "") for ext in sorted(ALLOWED_VIDEO_EXTENSIONS)],
+uploaded_video = st.file_uploader(
+    "Dépose une vidéo",
+    type=["mp4", "mov", "avi", "mkv"],
     accept_multiple_files=False,
 )
 
-if upload:
-    if not is_allowed_file(upload.name, ALLOWED_VIDEO_EXTENSIONS):
-        st.error("Format video non supporte.")
-        st.stop()
+if uploaded_video is not None:
+    st.video(uploaded_video)
 
-    video_path = save_uploaded_file(upload, UPLOAD_DIR)
-    st.caption(f"{Path(upload.name).name} - {readable_size(upload.size)}")
-    st.video(str(video_path))
+    if st.button("Lancer la détection + tracking", type="primary"):
+        with st.spinner("Chargement du modèle..."):
+            model = load_model(weight_choice)
 
-    try:
-        info = probe_video(video_path)
-        st.write(
-            f"Resolution: {int(info['width'])}x{int(info['height'])} | "
-            f"FPS: {info['fps']:.1f} | Duree: {info['duration']:.1f}s"
-        )
-    except RuntimeError as exc:
-        st.warning(str(exc))
+        input_path = save_uploaded_file_to_temp(uploaded_video)
+        output_path = make_temp_output_path(suffix=".mp4")
 
-    if st.button("Lancer le tracking", type="primary"):
+        progress_bar = st.progress(0.0, text="Traitement de la vidéo...")
+
+        def update_progress(fraction: float) -> None:
+            progress_bar.progress(fraction, text=f"Traitement... {int(fraction * 100)}%")
+
         try:
-            model = load_yolo_model(weight_name)
-            with st.spinner("Tracking en cours..."):
-                rendered_path = run_video_tracking(
-                    model,
-                    video_path,
-                    TRACKING_DIR,
-                    confidence=confidence,
-                    image_size=image_size,
-                    tracker=tracker_name,
+            result_path = track_video(
+                model=model,
+                input_path=input_path,
+                output_path=output_path,
+                conf=conf_threshold,
+                progress_callback=update_progress,
+            )
+            progress_bar.progress(1.0, text="Terminé !")
+
+            st.success("Tracking terminé.")
+            st.subheader("Vidéo annotée")
+            st.video(result_path)
+
+            with open(result_path, "rb") as f:
+                st.download_button(
+                    "Télécharger la vidéo annotée",
+                    data=f,
+                    file_name="video_annotee.mp4",
+                    mime="video/mp4",
                 )
-            st.success("Tracking termine")
-            st.video(str(rendered_path))
-        except ModelNotFoundError as exc:
-            st.error(str(exc))
-        except RuntimeError as exc:
-            st.error(str(exc))
+        except Exception as e:
+            st.error(f"Erreur pendant le traitement : {e}")
 else:
-    st.info("Ajoute une video MP4, AVI, MOV, MKV ou WEBM pour lancer le tracking.")
+    st.info("Dépose une vidéo ci-dessus pour lancer la détection + tracking.")

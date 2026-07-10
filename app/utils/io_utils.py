@@ -1,37 +1,44 @@
-﻿from __future__ import annotations
-
+"""
+Utilitaires pour la gestion des fichiers uploadés (images/vidéos) et fichiers temporaires.
+"""
+import tempfile
 from pathlib import Path
-from typing import BinaryIO
-from uuid import uuid4
 
-ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
-ALLOWED_VIDEO_EXTENSIONS = {".mp4", ".avi", ".mov", ".mkv", ".webm"}
+import numpy as np
+from PIL import Image
 
-
-def ensure_dir(path: Path) -> Path:
-    path.mkdir(parents=True, exist_ok=True)
-    return path
+IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp"}
+VIDEO_EXTENSIONS = {".mp4", ".mov", ".avi", ".mkv"}
 
 
-def file_suffix(filename: str) -> str:
-    return Path(filename).suffix.lower()
+def is_video_file(filename: str) -> bool:
+    return Path(filename).suffix.lower() in VIDEO_EXTENSIONS
 
 
-def is_allowed_file(filename: str, allowed_extensions: set[str]) -> bool:
-    return file_suffix(filename) in allowed_extensions
+def is_image_file(filename: str) -> bool:
+    return Path(filename).suffix.lower() in IMAGE_EXTENSIONS
 
 
-def save_uploaded_file(uploaded_file: BinaryIO, destination_dir: Path) -> Path:
-    ensure_dir(destination_dir)
-    suffix = file_suffix(getattr(uploaded_file, "name", "")) or ".bin"
-    destination = destination_dir / f"upload_{uuid4().hex}{suffix}"
-    destination.write_bytes(uploaded_file.getbuffer())
-    return destination
+def uploaded_file_to_array(uploaded_file) -> np.ndarray:
+    """Convertit un fichier uploadé Streamlit (image) en array numpy RGB."""
+    image = Image.open(uploaded_file).convert("RGB")
+    return np.array(image)
 
 
-def readable_size(num_bytes: int) -> str:
-    if num_bytes < 1024:
-        return f"{num_bytes} B"
-    if num_bytes < 1024**2:
-        return f"{num_bytes / 1024:.1f} KB"
-    return f"{num_bytes / 1024**2:.1f} MB"
+def save_uploaded_file_to_temp(uploaded_file) -> str:
+    """
+    Sauvegarde un fichier uploadé Streamlit (typiquement une vidéo) dans un
+    fichier temporaire sur disque, et retourne son chemin.
+    """
+    suffix = Path(uploaded_file.name).suffix
+    tmp_file = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
+    tmp_file.write(uploaded_file.read())
+    tmp_file.close()
+    return tmp_file.name
+
+
+def make_temp_output_path(suffix: str = ".mp4") -> str:
+    """Crée un chemin de fichier temporaire pour écrire une vidéo de sortie."""
+    tmp_file = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
+    tmp_file.close()
+    return tmp_file.name

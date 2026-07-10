@@ -1,31 +1,30 @@
-﻿# Python
-__pycache__/
-*.py[cod]
-*.pyo
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-.venv/
+# Poids des modèles (téléchargés au runtime depuis Google Drive)
+models/*.pt
+
+# Environnements Python
 venv/
+.venv/
 env/
+__pycache__/
+*.pyc
 
 # Streamlit
 .streamlit/secrets.toml
 
-# Models and generated media
-models/*.pt
-models/*.onnx
-models/*.engine
-outputs/
-runs/
-*.mp4
-*.avi
-*.mov
-*.mkv
-*.webm
+# Fichiers temporaires
+*.tmp
+*.log
+tmp/
 
-# OS / IDE
+# Vidéos/images de sortie générées par l'app
+outputs/
+*.mp4
+!data/samples/*.mp4
+
+# OS
 .DS_Store
 Thumbs.db
+
+# IDE
 .vscode/
 .idea/
