@@ -42,7 +42,7 @@ if uploaded_video is not None:
             progress_bar.progress(fraction, text=f"Traitement... {int(fraction * 100)}%")
 
         try:
-            result_path = track_video(
+            result_path, stats = track_video(
                 model=model,
                 input_path=input_path,
                 output_path=output_path,
@@ -66,6 +66,25 @@ if uploaded_video is not None:
                     file_name="video_annotee.mp4",
                     mime="video/mp4",
                 )
+
+            st.subheader("Résumé du tracking")
+            par_classe = stats["par_classe"]
+            if par_classe:
+                st.table(
+                    {
+                        "Classe": list(par_classe.keys()),
+                        "Objets uniques trackés": [v["objets_uniques"] for v in par_classe.values()],
+                        "Détections totales (cumulées)": [v["detections_totales"] for v in par_classe.values()],
+                    }
+                )
+                st.caption(
+                    f"{stats['nb_frames']} frames traitées. "
+                    "« Objets uniques » = nombre d'IDs de tracks distincts. "
+                    "« Détections totales » = somme des détections sur toutes les frames."
+                )
+            else:
+                st.write("Aucune détection sur cette vidéo.")
+
         except Exception as e:
             st.error(f"Erreur pendant le traitement : {e}")
 else:
