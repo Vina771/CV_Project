@@ -6,3 +6,4 @@ numpy
 Pillow
 supervision
 lap
+imageio-ffmpeg

@@ -1,10 +1,12 @@
 """
 Wrapper de tracking ByteTrack pour vidéos, basé sur ultralytics.model.track().
 """
+import subprocess
 from pathlib import Path
 from typing import Callable, Optional
 
 import cv2
+import imageio_ffmpeg
 from ultralytics import YOLO
 
 
@@ -18,6 +20,10 @@ def track_video(
     """
     Applique la détection + tracking ByteTrack frame par frame sur une vidéo,
     et écrit la vidéo annotée (bboxes + IDs persistants) dans output_path.
+
+    Note : cv2.VideoWriter avec le codec mp4v produit un fichier .mp4 valide
+    mais souvent illisible directement dans un <video> HTML5 (navigateur).
+    Utiliser reencode_for_browser() sur le résultat avant st.video().
 
     progress_callback: fonction optionnelle appelée avec un float 0-1
     pour mettre à jour une barre de progression Streamlit.
@@ -36,8 +42,6 @@ def track_video(
     writer = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
 
     frame_idx = 0
-    # model.track garde l'état du tracker en interne entre les appels
-    # tant qu'on ne passe pas persist=False
     results_generator = model.track(
         source=input_path,
         conf=conf,
@@ -57,5 +61,39 @@ def track_video(
 
     cap.release()
     writer.release()
+
+    return output_path
+
+
+def reencode_for_browser(input_path: str, output_path: Optional[str] = None) -> str:
+    """
+    Ré-encode une vidéo (typiquement issue de cv2.VideoWriter, codec mp4v)
+    en H.264 + faststart, lisible directement dans un <video> HTML5 / st.video().
+
+    Utilise le binaire ffmpeg embarqué par imageio-ffmpeg (installé via pip),
+    donc aucune dépendance système (apt) requise.
+    """
+    if output_path is None:
+        p = Path(input_path)
+        output_path = str(p.with_name(p.stem + "_web" + p.suffix))
+
+    ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
+
+    cmd = [
+        ffmpeg_exe,
+        "-y", 
+        "-i", input_path,
+        "-c:v", "libx264",
+        "-preset", "veryfast",
+        "-pix_fmt", "yuv420p",
+        "-movflags", "+faststart",
+        output_path,
+    ]
+
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0 or not Path(output_path).exists():
+        raise RuntimeError(
+            f"Échec du ré-encodage ffmpeg :\n{result.stderr[-2000:]}"
+        )
 
     return output_path

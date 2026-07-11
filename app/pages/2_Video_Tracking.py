@@ -10,7 +10,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from utils.inference import load_model
 from utils.io_utils import make_temp_output_path, save_uploaded_file_to_temp
-from utils.tracker import track_video
+from utils.tracker import track_video, reencode_for_browser
 
 st.set_page_config(page_title="Video Tracking", page_icon="🎥", layout="wide")
 st.title("🎥 Tracking sur vidéo (ByteTrack)")
@@ -49,13 +49,17 @@ if uploaded_video is not None:
                 conf=conf_threshold,
                 progress_callback=update_progress,
             )
+
+            with st.spinner("Conversion pour lecture dans le navigateur..."):
+                playable_path = reencode_for_browser(result_path)
+
             progress_bar.progress(1.0, text="Terminé !")
 
             st.success("Tracking terminé.")
             st.subheader("Vidéo annotée")
-            st.video(result_path)
+            st.video(playable_path)
 
-            with open(result_path, "rb") as f:
+            with open(playable_path, "rb") as f:
                 st.download_button(
                     "Télécharger la vidéo annotée",
                     data=f,
