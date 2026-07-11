@@ -1,7 +1,7 @@
 streamlit
 ultralytics
 gdown
-opencv-python-headless==4.5.5.64
-numpy<2
+opencv-python-headless
+numpy
 Pillow
 supervision
