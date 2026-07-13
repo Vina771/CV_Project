@@ -12,13 +12,14 @@ from utils.inference import load_model
 from utils.io_utils import make_temp_output_path, save_uploaded_file_to_temp
 from utils.tracker import track_video, reencode_for_browser
 
+CONF_THRESHOLD = 0.25
+
 st.set_page_config(page_title="Video Tracking", page_icon="🎥", layout="wide")
 st.title("🎥 Tracking sur vidéo (ByteTrack)")
 
 with st.sidebar:
     st.header("Paramètres")
     weight_choice = st.selectbox("Poids du modèle", ["best.pt", "last.pt"], index=0)
-    conf_threshold = st.slider("Seuil de confiance", 0.05, 0.95, 0.25, 0.05)
 
 uploaded_video = st.file_uploader(
     "Dépose une vidéo",
@@ -46,7 +47,7 @@ if uploaded_video is not None:
                 model=model,
                 input_path=input_path,
                 output_path=output_path,
-                conf=conf_threshold,
+                conf=CONF_THRESHOLD,
                 progress_callback=update_progress,
             )
 
@@ -89,3 +90,4 @@ if uploaded_video is not None:
             st.error(f"Erreur pendant le traitement : {e}")
 else:
     st.info("Dépose une vidéo ci-dessus pour lancer la détection + tracking.")
+    
